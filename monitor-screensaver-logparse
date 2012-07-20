@@ -1,0 +1,33 @@
+#!/bin/bash
+logfile="$HOME/usr/var/log/screensaver.log"
+
+#for date in $(cat -d- -f1 "$logfile"|sort|uniq)
+#do
+#    grep "^$date" | head -1
+#done
+
+# print first and last log entry of each days.
+print_first_and_last_for_days ()
+{
+    typeset olddatetime=''
+    typeset olddate oldtime date time
+    while read -r datetime rest
+    do
+        olddate="${olddatetime%%-*}"
+        oldtime="${olddatetime#*-}"
+        date="${datetime%%-*}"
+        time="${datetime##*-}"
+
+        if [ -z "$olddatetime" ]; then
+            echo -n "${date} ${time}-"
+        elif [ "$date" != "$olddate" ]
+        then
+            echo "$oldtime"
+            echo -n "$date $time-"
+        fi
+        olddatetime="$datetime"
+    done < $logfile
+    echo "$oldtime"
+}
+
+print_first_and_last_for_days

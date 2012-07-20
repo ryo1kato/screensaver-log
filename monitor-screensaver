@@ -1,0 +1,36 @@
+#!/bin/bash
+# watch screensaver's lock/unlock activity and log
+
+# c.f. http://people.gnome.org/~mccann/gnome-screensaver/docs/gnome-screensaver.html#gs-intro
+dbuswatch="type='signal',interface='org.gnome.ScreenSaver',member='ActiveChanged'"
+log=$HOME/usr/var/log/screensaver.log
+######################
+touch $log $log.err
+
+DIE () {
+    echo "ERROR: $*" | tee -a $log >&2
+}
+
+LOG () {
+    datetime=`date +%Y%m%d-%H:%M.%S`
+    echo "$datetime $*" >> $log
+}
+
+set -e
+trap 'LOG "Terminated by signal"; exit' TERM INT QUIT
+trap 'LOG "Exitting (SIGHUP)"; exit' HUP
+trap 'LOG "Unexpected error at $LINENO in $0"; exit' ERR
+
+LOG "Screensaver Monitoring Started ($0)"
+dbus-monitor "$dbuswatch" 2>> $log.err | while read line
+do
+    case $line in
+        boolean*)
+            LOG "ActiveChanged: $line"
+            ;;
+        *)
+            continue
+            ;;
+    esac
+done
+LOG "dbus-monitor exitted (user logged out?)"
